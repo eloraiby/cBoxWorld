@@ -1,0 +1,6 @@
+[submodule "c99-3d-math"]
+	path = c99-3d-math
+	url = https://github.com/eloraiby/c99-3d-math.git
+[submodule "emuGLES2"]
+	path = emuGLES2
+	url = https://github.com/eloraiby/emuGLES2.git
