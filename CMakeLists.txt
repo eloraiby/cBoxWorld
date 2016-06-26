@@ -10,10 +10,18 @@ set(CMAKE_C_FLAGS "-std=c99")
 
 find_package(GLFW3)
 find_package(PNG)
+find_package(Freetype)
 
 cmake_minimum_required(VERSION 2.8)
-aux_source_directory(. SRC_LIST)
+set(SRC_FILES
+        stb/stb_rect_pack.c
+        image.c
+        render.c
+        font.c
+        main.c)
 set(HEADER_FILES
-        boxworld.h)
-add_executable(${PROJECT_NAME} ${SRC_LIST} ${HEADER_FILES})
-target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} emuGLES2s 3dmaths GL)
+        boxworld.h
+        stb/stb_rect_pack.h)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
+target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${FREETYPE_LIBRARIES} emuGLES2s 3dmaths GL)

@@ -22,8 +22,9 @@
 #include "emuGLES2/emuGLES2.h"
 
 #include "boxworld.h"
-
-#define MAX_ERROR_LENGTH	1024
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_GLYPH_H
 
 static char				bworld_error_string[MAX_ERROR_LENGTH]	= {0};
 static BOXWORLD_ERROR	bworld_error							= NO_ERROR;
@@ -58,7 +59,7 @@ key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
 int
 main(void) {
-	GLFWwindow* window;
+	GLFWwindow*		window	= NULL;
 	image_t*		tex	= NULL;
 	gfx_context_t*	ctx	= NULL;
 
@@ -81,6 +82,7 @@ main(void) {
 		fprintf(stderr, "unable to read texture:\n%s", boxworld_error_string());
 		exit(EXIT_FAILURE);
 	}
+
 
 	ctx	= renderer_create_context(tex);
 
@@ -115,6 +117,7 @@ main(void) {
 		glfwPollEvents();
 	}
 
+	FT_Done_FreeType(ftlib);
 	renderer_release(ctx);
 	glfwDestroyWindow(window);
 	glfwTerminate();
