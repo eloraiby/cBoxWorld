@@ -23,6 +23,8 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
+#include "stb/stb_rect_pack.h"
+
 ARRAY_TYPE(pix_stream, uint8)
 
 /* intermediate char info */
@@ -179,6 +181,52 @@ font_result_release(font_result_t* res) {
 	free(res);
 }
 
+static uint32
+find_best_size(font_result_t* res) {
+	static uint32	texture_size[] = { 128,	256, 512, 1024, 2048 };
+	bool			success	= true;
+	uint32			size	= 0;
+
+	stbrp_rect*		rects	= (stbrp_rect*)malloc(sizeof(stbrp_rect) * res->char_count);
+	for( uint32 r = 0; r < res->char_count; ++r ) {
+		rects[r].w	= res->chars[r].width;
+		rects[r].h	= res->chars[r].height;
+		rects[r].id	= r;
+		rects[r].was_packed	= 0;
+		rects[r].x	= 0;
+		rects[r].y	= 0;
+	}
+
+	for( uint32 s = 0; s < sizeof(texture_size)	/ sizeof(uint32); ++s ) {
+		stbrp_context	ctx;
+		uint32			width	= texture_size[s];
+		stbrp_node*		nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * width * 2);
+		memset(nodes, 0, sizeof(stbrp_node) * width * 2);
+
+		stbrp_init_target(&ctx, width, width, nodes, width * 2);
+		stbrp_pack_rects(&ctx, rects, res->char_count);
+
+		free(nodes);
+
+		/* check if all rectangles were packed */
+		success	= true;
+		for( uint32 r = 0; r < res->char_count; ++r ) {
+			if( !rects[r].was_packed ) {
+				success	= false;
+				size	= width;
+			}
+		}
+
+		if( success )
+			break;
+	}
+
+	free(rects);
+
+	if( !success ) return 0;
+	else return size;
+}
+
 font_t*
 font_bake(const char* filename,
 		  uint32 size,
@@ -194,13 +242,21 @@ font_bake(const char* filename,
 	FT_Error		fterror;
 	FT_Library		ftlib;
 
+	uint32			best_size	= 0;
+
 	fterror	= FT_Init_FreeType(&ftlib);
 	if( fterror ) {
 		return (font_t*)boxworld_error(LOAD_FAILED, "font_bake: unable to load freetype library, bailing...");
 	}
 
 	ires	= font_result_bake(ftlib, filename, size, use_hint, force_autohinter, anti_alias, cp_count, cps);
+	if( !ires ) {
+		return NULL;
+	}
 
+	/* try to find the best texture size */
+	best_size	= find_best_size(ires);
+	font_result_release(ires);
 	FT_Done_FreeType(ftlib);
 	return result;
 }

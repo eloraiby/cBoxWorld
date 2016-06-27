@@ -117,7 +117,6 @@ main(void) {
 		glfwPollEvents();
 	}
 
-	FT_Done_FreeType(ftlib);
 	renderer_release(ctx);
 	glfwDestroyWindow(window);
 	glfwTerminate();
