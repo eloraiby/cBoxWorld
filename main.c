@@ -61,6 +61,7 @@ int
 main(void) {
 	GLFWwindow*		window	= NULL;
 	image_t*		tex	= NULL;
+	font_t*			fnt	= NULL;
 	gfx_context_t*	ctx	= NULL;
 
 	glfwSetErrorCallback(error_callback);
@@ -83,8 +84,12 @@ main(void) {
 		exit(EXIT_FAILURE);
 	}
 
+	static uint32 chars[128 - 32];
+	for( uint32 i = 32; i < 128; ++i ) chars[i - 32]	= i;
 
-	ctx	= renderer_create_context(tex);
+	fnt	= font_bake("DroidSans.ttf", 24, true, true, true, 128 - 32, chars);
+
+	ctx	= renderer_create_context(fnt->texture);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -96,7 +101,7 @@ main(void) {
 		renderer_begin(ctx, width, height);
 		renderer_quad(ctx,
 					  vec2(0.0f, 0.0f), vec2(0.0f, 0.0f),
-					  vec2(width * 0.5f, height * 0.5f), vec2(1.0f, 1.0f),
+					  vec2(fnt->texture->width, fnt->texture->height), vec2(1.0f, 1.0f),
 					  color4(1.0f, 1.0f, 1.0f, 1.0f));
 		renderer_end(ctx);
 //		glMatrixMode(GL_PROJECTION);

@@ -24,6 +24,8 @@
 #include <memory.h>
 #include <malloc.h>
 #include <math.h>
+#include <assert.h>
+
 #include "c99-3d-math/mathlib.h"
 #include "emuGLES2/emuGLES2.h"
 
@@ -88,7 +90,6 @@ typedef struct {
 image_t*				image_allocate(int width, int height, PIXEL_FORMAT fmt);
 void					image_release(image_t* img);
 image_t*				image_load_png(const char* path);
-
 
 /*
  * render.c

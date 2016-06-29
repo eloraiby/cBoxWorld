@@ -53,7 +53,7 @@ image_allocate(int width, int height, PIXEL_FORMAT fmt) {
 }
 
 void
-image_free(image_t* img) {
+image_release(image_t* img) {
 	free(img->pixels);
 	free(img);
 }
