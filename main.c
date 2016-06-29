@@ -63,6 +63,8 @@ main(void) {
 	image_t*		tex	= NULL;
 	font_t*			fnt	= NULL;
 	gfx_context_t*	ctx	= NULL;
+	static uint32	chars[128 - 32];
+	uint32			i;
 
 	glfwSetErrorCallback(error_callback);
 
@@ -84,15 +86,16 @@ main(void) {
 		exit(EXIT_FAILURE);
 	}
 
-	static uint32 chars[128 - 32];
-	for( uint32 i = 32; i < 128; ++i ) chars[i - 32]	= i;
 
-	fnt	= font_bake("DroidSans.ttf", 24, true, true, true, 128 - 32, chars);
+	for( i = 32; i < 128; ++i ) {
+		chars[i - 32]	= i;
+	}
+
+	fnt	= font_bake("DroidSans.ttf", 72, true, true, true, 128 - 32, chars);
 
 	ctx	= renderer_create_context(fnt->texture);
 
-	while (!glfwWindowShouldClose(window))
-	{
+	while (!glfwWindowShouldClose(window)) {
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
 		glViewport(0, 0, width, height);
@@ -103,21 +106,9 @@ main(void) {
 					  vec2(0.0f, 0.0f), vec2(0.0f, 0.0f),
 					  vec2(fnt->texture->width, fnt->texture->height), vec2(1.0f, 1.0f),
 					  color4(1.0f, 1.0f, 1.0f, 1.0f));
+
 		renderer_end(ctx);
-//		glMatrixMode(GL_PROJECTION);
-//		glLoadIdentity();
-//		glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-//		glMatrixMode(GL_MODELVIEW);
-//		glLoadIdentity();
-//		glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
-//		glBegin(GL_TRIANGLES);
-//		glColor3f(1.f, 0.f, 0.f);
-//		glVertex3f(-0.6f, -0.4f, 0.f);
-//		glColor3f(0.f, 1.f, 0.f);
-//		glVertex3f(0.6f, -0.4f, 0.f);
-//		glColor3f(0.f, 0.f, 1.f);
-//		glVertex3f(0.f, 0.6f, 0.f);
-//		glEnd();
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

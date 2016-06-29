@@ -75,6 +75,7 @@ image_load_png(const char* path) {
 	image_t*		tex			= NULL;
 	char*			buff		= NULL;
 	png_bytepp		row_pointers;
+	uint32			r;	/* row */
 
 	if( (fp = fopen(path, "rb")) == NULL ) {
 			return (image_t*)boxworld_error(FILE_NOT_FOUND, "load_png: file not found");
@@ -188,7 +189,7 @@ image_load_png(const char* path) {
 	buff			= (char*)tex->pixels;
 	row_pointers	= png_get_rows(png_ptr, info_ptr);
 
-	for( uint32 r = 0; r < height; r++ ) {
+	for( r = 0; r < height; r++ ) {
 		// note that png is ordered top to
 		// bottom, but OpenGL expect it bottom to top
 		// so the order or swapped

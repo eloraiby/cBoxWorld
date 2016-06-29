@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
 )
 
-set(CMAKE_C_FLAGS "-std=c99")
+#set(CMAKE_C_FLAGS "-std=c99")
 
 find_package(GLFW3)
 find_package(PNG)

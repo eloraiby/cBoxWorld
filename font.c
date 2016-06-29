@@ -51,7 +51,8 @@ typedef struct {
 static uint32
 unpack_bits(uint8 byte, uint32 max_w, pix_stream_t* dest) {
 	uint32	w	= 0;
-	for( int i = 7; i >= 0 && w < max_w; i--, w++ ) {
+	int		i;
+	for( i = 7; i >= 0 && w < max_w; i--, w++ ) {
 		if( byte & 0x80 ) { pix_stream_push(dest, 0xFF); }
 		else { pix_stream_push(dest, 0x00); }
 	}
@@ -67,6 +68,7 @@ font_result_bake(FT_Library lib, const char* path, uint32 size, bool use_hint, b
 	FT_Render_Mode	render_flags;
 	pix_stream_t	pixmap;
 	vec2_t			max_char_size	= vec2(-FLT_MAX, -FLT_MAX);
+	uint32			c;
 	font_result_t*	result	= NULL;
 
 	char		error_buff[MAX_ERROR_LENGTH]	= {0};
@@ -109,7 +111,7 @@ font_result_bake(FT_Library lib, const char* path, uint32 size, bool use_hint, b
 
 	pixmap	= pix_stream_new();
 
-	for( uint32 c = 0; c < char_count; ++c ) {
+	for( c = 0; c < char_count; ++c ) {
 		FT_Glyph	glyph;
 		FT_BBox		box;
 		uint32		glyph_index	= FT_Get_Char_Index(face, (uint32)(chars[c]));
@@ -142,16 +144,20 @@ font_result_bake(FT_Library lib, const char* path, uint32 size, bool use_hint, b
 		max_char_size.y	= MAX(max_char_size.y, box.yMax - box.yMin);
 
 		if( !anti_alias ) {
-			for( uint32 y = 0; y < slot->bitmap.rows; ++y ) {
+			uint32	y;
+			for( y = 0; y < slot->bitmap.rows; ++y ) {
+				uint32	x;
 				uint32	w	= slot->bitmap.width;
-				for( uint32 x = 0; x < (uint32)slot->bitmap.pitch; ++x ) {
+				for( x = 0; x < (uint32)slot->bitmap.pitch; ++x ) {
 					unpack_bits(slot->bitmap.buffer[x + y * (uint32)slot->bitmap.pitch], w, &pixmap);
 					w	-= 8;
 				}
 			}
 		} else {
-			for( uint32 y = 0; y < slot->bitmap.rows; ++y ) {
-				for( uint32 x = 0; x < (uint32)slot->bitmap.width; ++x ) {
+			uint32	y;
+			for( y = 0; y < slot->bitmap.rows; ++y ) {
+				uint32	x;
+				for( x = 0; x < (uint32)slot->bitmap.width; ++x ) {
 					pix_stream_push(&pixmap, slot->bitmap.buffer[x + y * (uint32)slot->bitmap.pitch]);
 				}
 			}
@@ -198,14 +204,17 @@ find_best_size(font_result_t* res) {
 	static uint32	texture_size[] = { 128,	256, 512, 1024, 2048 };
 	bool			success	= true;
 	uint32			size	= 0;
+	uint32			r;
+	uint32			s;
 
 	stbrp_rect*		rects	= (stbrp_rect*)malloc(sizeof(stbrp_rect) * res->char_count);
-	for( uint32 r = 0; r < res->char_count; ++r ) {
+	for( r = 0; r < res->char_count; ++r ) {
 		rects[r]	= glyph_to_rect(r, res->chars[r]);
 	}
 
-	for( uint32 s = 0; s < sizeof(texture_size)	/ sizeof(uint32); ++s ) {
+	for( s = 0; s < sizeof(texture_size)	/ sizeof(uint32); ++s ) {
 		stbrp_context	ctx;
+		uint32			r;
 		uint32			width	= texture_size[s];
 		stbrp_node*		nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * width * 2);
 		memset(nodes, 0, sizeof(stbrp_node) * width * 2);
@@ -217,7 +226,7 @@ find_best_size(font_result_t* res) {
 
 		/* check if all rectangles were packed */
 		success	= true;
-		for( uint32 r = 0; r < res->char_count; ++r ) {
+		for( r = 0; r < res->char_count; ++r ) {
 			if( !rects[r].was_packed ) {
 				success	= false;
 				size	= 0;
@@ -255,6 +264,16 @@ font_bake(const char* filename,
 
 	uint32			best_size	= 0;
 
+	stbrp_rect*		rects	= NULL;
+	stbrp_node*		nodes	= NULL;
+	stbrp_context	ctx;
+	uint32			r;
+	uint32			c;
+
+	/* initialize context */
+	memset(&ctx, 0, sizeof(ctx));
+
+
 	fterror	= FT_Init_FreeType(&ftlib);
 	if( fterror ) {
 		return (font_t*)boxworld_error(LOAD_FAILED, "font_bake: unable to load freetype library, bailing...");
@@ -278,15 +297,13 @@ font_bake(const char* filename,
 	}
 
 	/* glyph to rect */
-	stbrp_rect*		rects	= (stbrp_rect*)malloc(sizeof(stbrp_rect) * ires->char_count);
-	for( uint32 r = 0; r < ires->char_count; ++r ) {
+	rects	= (stbrp_rect*)malloc(sizeof(stbrp_rect) * ires->char_count);
+	for( r = 0; r < ires->char_count; ++r ) {
 		rects[r]	= glyph_to_rect(r, ires->chars[r]);
 	}
 
-	stbrp_context	ctx;
-	memset(&ctx, 0, sizeof(ctx));
-
-	stbrp_node*		nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * best_size * 2);
+	/* nodes */
+	nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * best_size * 2);
 	memset(nodes, 0, sizeof(stbrp_node) * best_size * 2);
 
 	stbrp_init_target(&ctx, best_size, best_size, nodes, best_size * 2);
@@ -295,16 +312,18 @@ font_bake(const char* filename,
 	free(nodes);
 
 	/* copy the rectangle */
-	for( uint32 r = 0; r < ires->char_count; ++r ) {
+	for( r = 0; r < ires->char_count; ++r ) {
+		uint32	y;
 		uint32	h	= ires->chars[r].height;
 		uint32	w	= ires->chars[r].width;
 		uint32	o	= ires->chars[r].pixmap_offset;
 
 		assert( rects[r].was_packed );
 
-		for( uint32 y = 0; y < h ; ++y ) {
-			for( uint32 x = 0; x < w; ++x, ++o ) {
-				uint32	offset	= rects[r].x + x + (h  - y - 1 + rects[r].y) * tex->width;
+		for( y = 0; y < h ; ++y ) {
+			uint32	x;
+			for( x = 0; x < w; ++x, ++o ) {
+				uint32	offset	= rects[r].x + x + (tex->height - 1 - (y + rects[r].y)) * tex->width;
 				((uint8*)tex->pixels)[offset * 4 + 3] = pix_stream_get(&(ires->pixmap), o);
 				((uint8*)tex->pixels)[offset * 4 + 2] = 0xFF;
 				((uint8*)tex->pixels)[offset * 4 + 1] = 0xFF;
@@ -345,7 +364,7 @@ font_bake(const char* filename,
 	}
 
 	/* set the char info */
-	for( uint32 c = 0; c < ires->char_count; ++c ) {
+	for( c = 0; c < ires->char_count; ++c ) {
 		result->chars[c].advance	= ires->chars[c].advance;
 		result->chars[c].bbox		= rect(ires->chars[c].box_min.x,
 										   ires->chars[c].box_min.y,
