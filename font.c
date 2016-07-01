@@ -190,7 +190,7 @@ font_result_release(font_result_t* res) {
 static stbrp_rect
 glyph_to_rect(uint32 r, glyph_info_t c) {
 	stbrp_rect	rect;
-	rect.w	= (uint16) (c.width + 1 );
+	rect.w	= (uint16) (c.width  + 1);
 	rect.h	= (uint16) (c.height + 1);
 	rect.id	= (uint16)r;
 	rect.was_packed	= 0;
@@ -244,6 +244,13 @@ find_best_size(font_result_t* res) {
 
 	if( !success ) return 0;
 	else return size;
+}
+
+int
+char_font_compare(const void* a, const void* b) {
+	const char_info_t*	ca	= (const char_info_t*)a;
+	const char_info_t*	cb	= (const char_info_t*)b;
+	return (int)(ca->code_point - cb->code_point);
 }
 
 font_t*
@@ -323,7 +330,7 @@ font_bake(const char* filename,
 		for( y = 0; y < h ; ++y ) {
 			uint32	x;
 			for( x = 0; x < w; ++x, ++o ) {
-				uint32	offset	= rects[r].x + x + (tex->height - 1 - (y + rects[r].y)) * tex->width;
+				uint32	offset	= rects[r].x + x + (tex->height - 1 - y - rects[r].y) * tex->width;
 				((uint8*)tex->pixels)[offset * 4 + 3] = pix_stream_get(&(ires->pixmap), o);
 				((uint8*)tex->pixels)[offset * 4 + 2] = 0xFF;
 				((uint8*)tex->pixels)[offset * 4 + 1] = 0xFF;
@@ -366,14 +373,16 @@ font_bake(const char* filename,
 	/* set the char info */
 	for( c = 0; c < ires->char_count; ++c ) {
 		result->chars[c].advance	= ires->chars[c].advance;
-		result->chars[c].bbox		= rect(ires->chars[c].box_min.x,
-										   ires->chars[c].box_min.y,
-										   ires->chars[c].box_max.x - ires->chars[c].box_min.x,
-										   ires->chars[c].box_max.y - ires->chars[c].box_min.y);
+		result->chars[c].start		= vec2(ires->chars[c].box_min.x,
+										   ires->chars[c].box_min.y);
 		result->chars[c].code_point	= cps[c];
 		result->chars[c].tcoords	= rect(rects[c].x, rects[c].y, rects[c].w - 1, rects[c].h - 1);
 	}
 
+	/* sort by code point by increasing order */
+	qsort(result->chars, cp_count, sizeof(char_info_t), char_font_compare);
+
+	result->size	= size;
 
 	/* release resource */
 	free(rects);
@@ -390,12 +399,73 @@ font_release(font_t* fnt) {
 	free(fnt);
 }
 
-void
-font_render_char(gfx_context_t* ctx, font_t* fnt, uint32 cp) {
-
+/* binary search for code point */
+static uint32
+rec_find_codepoint_index(font_t* fnt, uint32 cp, uint32 left, uint32 right) {
+	uint32	cl	= fnt->chars[left].code_point;
+	if( cp == cl ) {
+		return left;
+	} else if( cp < cl ) {
+		return (uint32)-1;
+	} else {
+		uint32	cr	= fnt->chars[right].code_point;
+		if( cp == cr ) {
+			return cr;
+		} else if( cp > cr ) {
+			return (uint32)-1;
+		} else {
+			uint32	middle	= (left + right) >> 1;
+			if( middle != left ) {
+				uint32	cm	= fnt->chars[(left + right) >> 1].code_point;
+				if( cp > cm ) {
+					return rec_find_codepoint_index(fnt, cp, middle, right);
+				} else {
+					return rec_find_codepoint_index(fnt, cp, left, middle);
+				}
+			} else {
+				return (uint32)-1;
+			}
+		}
+	}
 }
 
-void
-font_render_string(gfx_context_t* ctx, font_t* fnt, uint32 strLen, uint32* cps) {
+uint32
+find_codepoint_index(font_t* fnt, uint32 cp) {
+	return rec_find_codepoint_index(fnt, cp, 0, fnt->char_count - 1);
+}
 
+vec2_t
+font_render_char(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 cp, color4_t col) {
+	uint32	cp_index	= find_codepoint_index(fnt, cp);
+	if( cp_index != (uint32)-1 ) {
+		float	tw	= fnt->texture->width;
+		float	th	= fnt->texture->width;
+
+		float	tsx	= fnt->chars[cp_index].tcoords.x / tw;
+		float	tsy	= fnt->chars[cp_index].tcoords.y / th;
+		float	tex	= tsx + fnt->chars[cp_index].tcoords.width / tw;
+		float	tey	= tsy + fnt->chars[cp_index].tcoords.height/ th;
+
+		vec2_t	start	= vec2_add(fnt->chars[cp_index].start, pos);
+
+		float	w	= fnt->chars[cp_index].tcoords.width;
+		float	h	= fnt->chars[cp_index].tcoords.height;
+
+		renderer_quad(ctx,
+					  vec2_add(start, vec2(0, h)), vec2(tsx, 1.0f - tsy),
+					  vec2_add(start, vec2(w, 0)), vec2(tex, 1.0f - tey),
+					  col);
+		return vec2_add(pos, vec2(fnt->chars[cp_index].advance, 0.0f));
+	} else {
+		return pos;
+	}
+}
+
+vec2_t
+font_render_string(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 str_len, uint32* cps, color4_t col) {
+	vec2_t	ret	= pos;
+	uint32	c;
+	for( c = 0; c < str_len; ++c )
+		ret	= font_render_char(ctx, fnt, ret, cps[c], col);
+	return ret;
 }

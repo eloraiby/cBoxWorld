@@ -135,20 +135,22 @@ void					renderer_end(gfx_context_t* ctx);
 typedef struct {
 	uint32	code_point;
 	rect_t	tcoords;
-	rect_t	bbox;
+	vec2_t	start;
 	float	advance;
 } char_info_t;
 
 typedef struct {
+	uint32			size;
 	uint32			char_count;
-	char_info_t*	chars;
+	char_info_t*	chars;	/* chars are sorted by code point */
 	image_t*		texture;
 } font_t;
 
 font_t*					font_bake(const char* filename, uint32 size, bool use_hint, bool force_autohinter, bool anti_alias, uint32 cp_count, uint32* cps);
 void					font_release(font_t* fnt);
-void					font_render_char(gfx_context_t* ctx, font_t* fnt, uint32 cp);
-void					font_render_string(gfx_context_t* ctx, font_t* fnt, uint32 strLen, uint32* cps);
+uint32					font_find_codepoint_index(font_t* fnt, uint32 cp);
+vec2_t					font_render_char(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 cp, color4_t col);
+vec2_t					font_render_string(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 str_len, uint32* cps, color4_t col);
 
 /*
  * level.c

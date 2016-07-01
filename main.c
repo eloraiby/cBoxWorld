@@ -91,12 +91,13 @@ main(void) {
 		chars[i - 32]	= i;
 	}
 
-	fnt	= font_bake("DroidSans.ttf", 72, true, true, true, 128 - 32, chars);
+	fnt	= font_bake("DroidSans.ttf", 24, true, true, true, 128 - 32, chars);
 
 	ctx	= renderer_create_context(fnt->texture);
 
 	while (!glfwWindowShouldClose(window)) {
 		int width, height;
+		int	c;
 		glfwGetFramebufferSize(window, &width, &height);
 		glViewport(0, 0, width, height);
 		glClearColor(0.5f, 0.5f, 0.5f, 0.5f);
@@ -106,6 +107,14 @@ main(void) {
 					  vec2(0.0f, 0.0f), vec2(0.0f, 0.0f),
 					  vec2(fnt->texture->width, fnt->texture->height), vec2(1.0f, 1.0f),
 					  color4(1.0f, 1.0f, 1.0f, 1.0f));
+
+
+		uint32	cps[256] = {0};
+		for(c = 0; c < 94; ++c) {
+			cps[c]	= c;
+		}
+
+		font_render_string(ctx, fnt, vec2(0.0f, 384.0f), 94, cps, color4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		renderer_end(ctx);
 

@@ -140,7 +140,7 @@ renderer_begin(gfx_context_t* ctx, int width, int height) {
 	glEnable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
-	glEnable(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
