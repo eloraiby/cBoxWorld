@@ -130,13 +130,23 @@ void					renderer_quad(gfx_context_t* ctx, vec2_t sv, vec2_t st, vec2_t ev, vec2
 void					renderer_end(gfx_context_t* ctx);
 
 /*
+ * utf8.c
+ */
+typedef enum {
+	UTF8_ACCEPT	= 0,
+	UTF8_REJECT = 12
+} UTF8_STATE;
+
+UTF8_STATE				utf8_decode(uint32 *state, uint32* codep, uint32 byte);
+
+/*
  * font.c
  */
 typedef struct {
-	uint32	code_point;
-	rect_t	tcoords;
-	vec2_t	start;
-	float	advance;
+	uint32			code_point;
+	rect_t			tcoords;
+	vec2_t			start;
+	float			advance;
 } char_info_t;
 
 typedef struct {
@@ -148,9 +158,10 @@ typedef struct {
 
 font_t*					font_bake(const char* filename, uint32 size, bool use_hint, bool force_autohinter, bool anti_alias, uint32 cp_count, uint32* cps);
 void					font_release(font_t* fnt);
-uint32					font_find_codepoint_index(font_t* fnt, uint32 cp);
-vec2_t					font_render_char(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 cp, color4_t col);
-vec2_t					font_render_string(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 str_len, uint32* cps, color4_t col);
+uint32					font_find_codepoint_index(const font_t* fnt, uint32 cp);
+vec2_t					font_render_char(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 cp, color4_t col);
+vec2_t					font_render_string(gfx_context_t* ctx, const font_t *fnt, vec2_t pos, uint32 str_len, const uint32 *cps, color4_t col);
+vec2_t					font_render_utf8(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str_len, const uint8* cps, color4_t col);
 
 /*
  * level.c

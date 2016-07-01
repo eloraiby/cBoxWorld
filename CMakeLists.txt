@@ -15,6 +15,7 @@ find_package(Freetype)
 cmake_minimum_required(VERSION 2.8)
 set(SRC_FILES
         stb/stb_rect_pack.c
+        utf8.c
         image.c
         render.c
         font.c

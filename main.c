@@ -114,7 +114,8 @@ main(void) {
 			cps[c]	= c;
 		}
 
-		font_render_string(ctx, fnt, vec2(0.0f, 384.0f), 94, cps, color4(1.0f, 1.0f, 1.0f, 1.0f));
+		const char* str = "Hello World! This is a test";
+		font_render_utf8(ctx, fnt, vec2(0.0f, 384.0f), strlen(str), str, color4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		renderer_end(ctx);
 

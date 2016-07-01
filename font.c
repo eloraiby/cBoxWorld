@@ -401,7 +401,7 @@ font_release(font_t* fnt) {
 
 /* binary search for code point */
 static uint32
-rec_find_codepoint_index(font_t* fnt, uint32 cp, uint32 left, uint32 right) {
+rec_find_codepoint_index(const font_t* fnt, uint32 cp, uint32 left, uint32 right) {
 	uint32	cl	= fnt->chars[left].code_point;
 	if( cp == cl ) {
 		return left;
@@ -410,13 +410,13 @@ rec_find_codepoint_index(font_t* fnt, uint32 cp, uint32 left, uint32 right) {
 	} else {
 		uint32	cr	= fnt->chars[right].code_point;
 		if( cp == cr ) {
-			return cr;
+			return right;
 		} else if( cp > cr ) {
 			return (uint32)-1;
 		} else {
 			uint32	middle	= (left + right) >> 1;
 			if( middle != left ) {
-				uint32	cm	= fnt->chars[(left + right) >> 1].code_point;
+				uint32	cm	= fnt->chars[middle].code_point;
 				if( cp > cm ) {
 					return rec_find_codepoint_index(fnt, cp, middle, right);
 				} else {
@@ -430,13 +430,14 @@ rec_find_codepoint_index(font_t* fnt, uint32 cp, uint32 left, uint32 right) {
 }
 
 uint32
-find_codepoint_index(font_t* fnt, uint32 cp) {
+find_codepoint_index(const font_t* fnt, uint32 cp) {
 	return rec_find_codepoint_index(fnt, cp, 0, fnt->char_count - 1);
 }
 
 vec2_t
-font_render_char(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 cp, color4_t col) {
+font_render_char(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 cp, color4_t col) {
 	uint32	cp_index	= find_codepoint_index(fnt, cp);
+
 	if( cp_index != (uint32)-1 ) {
 		float	tw	= fnt->texture->width;
 		float	th	= fnt->texture->width;
@@ -455,6 +456,7 @@ font_render_char(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 cp, color4_
 					  vec2_add(start, vec2(0, h)), vec2(tsx, 1.0f - tsy),
 					  vec2_add(start, vec2(w, 0)), vec2(tex, 1.0f - tey),
 					  col);
+
 		return vec2_add(pos, vec2(fnt->chars[cp_index].advance, 0.0f));
 	} else {
 		return pos;
@@ -462,10 +464,24 @@ font_render_char(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 cp, color4_
 }
 
 vec2_t
-font_render_string(gfx_context_t* ctx, font_t* fnt, vec2_t pos, uint32 str_len, uint32* cps, color4_t col) {
+font_render_string(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str_len, const uint32* cps, color4_t col) {
 	vec2_t	ret	= pos;
 	uint32	c;
 	for( c = 0; c < str_len; ++c )
 		ret	= font_render_char(ctx, fnt, ret, cps[c], col);
+	return ret;
+}
+
+vec2_t
+font_render_utf8(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str_len, const uint8* cps, color4_t col) {
+	vec2_t	ret	= pos;
+	uint32	c;
+	uint32	state	= 0;
+	uint32	cp	= 0;
+	for( c = 0; c < str_len; ++c ) {
+		if( UTF8_ACCEPT == utf8_decode(&state, &cp, cps[c]) ) {
+			ret	= font_render_char(ctx, fnt, ret, cp, col);
+		}
+	}
 	return ret;
 }
