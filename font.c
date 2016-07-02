@@ -23,10 +23,6 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-#include "stb/stb_rect_pack.h"
-
-ARRAY_TYPE(pix_stream, uint8)
-
 /* intermediate char info */
 typedef struct {
 	uint32		code_point;	/* UTF code point */
@@ -220,13 +216,7 @@ font_bake(const char* filename,
 	FT_Error		fterror;
 	FT_Library		ftlib;
 
-	stbrp_context	ctx;
-	uint32			r;
 	uint32			c;
-
-	/* initialize context */
-	memset(&ctx, 0, sizeof(ctx));
-
 
 	fterror	= FT_Init_FreeType(&ftlib);
 	if( fterror ) {

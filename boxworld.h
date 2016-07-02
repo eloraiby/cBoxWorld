@@ -26,7 +26,7 @@
 #include <math.h>
 #include <assert.h>
 
-#include "c99-3d-math/mathlib.h"
+#include "c99-3d-math/3dmath.h"
 #include "emuGLES2/emuGLES2.h"
 
 #define ARRAY_TYPE(name, type)	\
