@@ -21,8 +21,8 @@
 #include "stb/stb_rect_pack.h"
 
 image_t*
-image_allocate(int width, int height, PIXEL_FORMAT fmt) {
-	int			ps	= 0;
+image_allocate(uint32 width, uint32 height, PIXEL_FORMAT fmt) {
+	uint32		ps	= 0;
 	image_t*	ret	= NULL;
 
 	switch(fmt) {
@@ -79,7 +79,7 @@ image_load_png(const char* path) {
 	uint32			r;	/* row */
 
 	if( (fp = fopen(path, "rb")) == NULL ) {
-			return (image_t*)boxworld_error(FILE_NOT_FOUND, "load_png: file not found");
+		return (image_t*)boxworld_error(FILE_NOT_FOUND, "load_png: file not found");
 	}
 
 	/* Create and initialize the png_struct
@@ -95,17 +95,17 @@ image_load_png(const char* path) {
 	*/
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if( png_ptr == NULL ) {
-			fclose(fp);
-			return (image_t*)boxworld_error(INVALID_FORMAT, "load_png: invalid PNG format");
+		fclose(fp);
+		return (image_t*)boxworld_error(INVALID_FORMAT, "load_png: invalid PNG format");
 	}
 
 	/* Allocate/initialize the memory
 	* for image information. REQUIRED. */
 	info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL) {
-			fclose(fp);
-			png_destroy_read_struct(&png_ptr, NULL, NULL);
-			return (image_t*)boxworld_error(NOT_ENOUGH_MEMORY, "load_png: not enough memory or format supported");
+		fclose(fp);
+		png_destroy_read_struct(&png_ptr, NULL, NULL);
+		return (image_t*)boxworld_error(NOT_ENOUGH_MEMORY, "load_png: not enough memory or format supported");
 	}
 
 	/* Set error handling if you are
@@ -118,13 +118,13 @@ image_load_png(const char* path) {
 	* earlier.
 	*/
 	if (setjmp(png_jmpbuf(png_ptr))) {
-			/* Free all of the memory associated
+		/* Free all of the memory associated
 			* with the png_ptr and info_ptr */
-			png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-			fclose(fp);
-			/* If we get here, we had a
+		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		fclose(fp);
+		/* If we get here, we had a
 			* problem reading the file */
-			return (image_t*)boxworld_error(INVALID_FORMAT, "load_png: inconsistant file");
+		return (image_t*)boxworld_error(INVALID_FORMAT, "load_png: inconsistant file");
 	}
 	/* Set up the output control if
 	* you are using standard C streams */
@@ -238,8 +238,8 @@ find_best_size(uint32 img_count, const image_t* const* imgs) {
 		stbrp_node*		nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * width * 2);
 		memset(nodes, 0, sizeof(stbrp_node) * width * 2);
 
-		stbrp_init_target(&ctx, width, width, nodes, width * 2);
-		stbrp_pack_rects(&ctx, rects, img_count);
+		stbrp_init_target(&ctx, (sint32)width, (sint32)width, nodes, (sint32)width * 2);
+		stbrp_pack_rects(&ctx, rects, (sint32)img_count);
 
 		free(nodes);
 
@@ -263,4 +263,200 @@ find_best_size(uint32 img_count, const image_t* const* imgs) {
 
 	if( !success ) return 0;
 	else return size;
+}
+
+color4b_t
+image_get_pixelb(const image_t* img, uint32 x, uint32 y) {
+	uint32		offset	= 0;
+	uint8*		pixels	= (uint8*)img->pixels;
+	switch(img->format) {
+	case PF_A8:
+		offset	= img->width * y + x;
+		return color4b(0, 0, 0, pixels[offset]);
+	case PF_R8G8B8:
+		offset	= (img->width * y + x) * 3;
+		return color4b(pixels[offset + 0], pixels[offset + 1], pixels[offset + 2], 0xFF);
+	case PF_R8G8B8A8:
+		offset	= (img->width * y + x) * 4;
+		return color4b(pixels[offset + 0], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3]);
+	}
+}
+
+color4_t
+image_get_pixelf(const image_t* img, uint32 x, uint32 y) {
+	uint32		offset	= 0;
+	uint8*		pixels	= (uint8*)img->pixels;
+	float		r, g, b, a;
+
+	switch(img->format) {
+	case PF_A8:
+		offset	= img->width * y + x;
+		a		= pixels[offset];
+		return color4(0, 0, 0, a / 255.0f);
+	case PF_R8G8B8:
+		offset	= (img->width * y + x) * 3;
+		r		= pixels[offset + 0];
+		g		= pixels[offset + 1];
+		b		= pixels[offset + 2];
+		return color4(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
+	case PF_R8G8B8A8:
+		offset	= (img->width * y + x) * 4;
+		r		= pixels[offset + 0];
+		g		= pixels[offset + 1];
+		b		= pixels[offset + 2];
+		a		= pixels[offset + 3];
+		return color4(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
+	}
+}
+
+void
+image_set_pixelb(image_t* img, uint32 x, uint32 y, color4b_t rgba) {
+	uint32		offset	= 0;
+	uint8*		pixels	= (uint8*)img->pixels;
+	switch(img->format) {
+	case PF_A8:
+		offset	= img->width * y + x;
+		pixels[offset]	= rgba.a;
+		break;
+	case PF_R8G8B8:
+		offset	= (img->width * y + x) * 3;
+		pixels[offset + 0]	= rgba.r;
+		pixels[offset + 1]	= rgba.g;
+		pixels[offset + 2]	= rgba.b;
+		break;
+	case PF_R8G8B8A8:
+		offset	= (img->width * y + x) * 4;
+		pixels[offset + 0]	= rgba.r;
+		pixels[offset + 1]	= rgba.g;
+		pixels[offset + 2]	= rgba.b;
+		pixels[offset + 3]	= rgba.a;
+		break;
+	}
+}
+
+void
+image_set_pixelf(image_t* img, uint32 x, uint32 y, color4_t rgbaf) {
+	uint32		offset	= 0;
+	uint8*		pixels	= (uint8*)img->pixels;
+	color4b_t	rgba	= color4b((uint8)(rgbaf.r * 255.0f), (uint8)(rgbaf.g * 255.0f), (uint8)(rgbaf.b * 255.0f), (uint8)(rgbaf.a * 255.0f));
+	switch(img->format) {
+	case PF_A8:
+		offset	= img->width * y + x;
+		pixels[offset]	= rgba.a;
+		break;
+	case PF_R8G8B8:
+		offset	= (img->width * y + x) * 3;
+		pixels[offset + 0]	= rgba.r;
+		pixels[offset + 1]	= rgba.g;
+		pixels[offset + 2]	= rgba.b;
+		break;
+	case PF_R8G8B8A8:
+		offset	= (img->width * y + x) * 4;
+		pixels[offset + 0]	= rgba.r;
+		pixels[offset + 1]	= rgba.g;
+		pixels[offset + 2]	= rgba.b;
+		pixels[offset + 3]	= rgba.a;
+		break;
+	}
+}
+
+atlas_t*
+image_atlas_make(uint32 image_count, const image_t* const* images) {
+	stbrp_rect*	rects	= NULL;
+	stbrp_node*	nodes	= NULL;
+	stbrp_context	ctx;
+	uint32		r;
+	uint32		best_size;
+	image_t*	tex		= NULL;
+	atlas_t*	atlas	= NULL;
+	rect_t*		drects	= NULL;
+
+	/* try to find the best texture size */
+	best_size	= find_best_size(image_count, images);
+
+	/* create the texture and fill in the pixels */
+	tex	= image_allocate(best_size, best_size, PF_R8G8B8A8);
+	if( !tex ) {
+		return NULL;
+	}
+
+	/* image to rect */
+	rects	= (stbrp_rect*)malloc(sizeof(stbrp_rect) * image_count);
+	for( r = 0; r < image_count; ++r ) {
+		rects[r]	= image_to_rect(r, images[r]);
+	}
+
+	/* nodes */
+	nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * best_size * 2);
+	if( !nodes ) {
+		image_release(tex);
+		free(rects);
+		return boxworld_error(NOT_ENOUGH_MEMORY, "image_make_atlas: not enough memory for nodes");
+	}
+
+	memset(nodes, 0, sizeof(stbrp_node) * best_size * 2);
+
+	/* desitnation rectangles */
+	drects	= (rect_t*)malloc(sizeof(rect_t) * image_count);
+	if( !drects ) {
+		free(nodes);
+		image_release(tex);
+		free(rects);
+		return boxworld_error(NOT_ENOUGH_MEMORY, "image_make_atlas: not enough memory for drects");
+	}
+
+	memset(drects, 0, sizeof(rect_t) * image_count);
+
+	/* pack */
+	stbrp_init_target(&ctx, (int)best_size, (int)best_size, nodes, (int)best_size * 2);
+	stbrp_pack_rects(&ctx, rects, (int)image_count);
+
+	free(nodes);
+
+	/* copy the rectangle */
+	for( r = 0; r < image_count; ++r ) {
+		uint32	y;
+		uint32	h	= images[r]->height;
+		uint32	w	= images[r]->width;
+
+		assert( rects[r].was_packed );
+
+		drects[r].x	= rects[r].x;
+		drects[r].y	= rects[r].y;
+		drects[r].width	= rects[r].w;
+		drects[r].height= rects[r].h;
+
+		for( y = 0; y < h ; ++y ) {
+			uint32	x;
+			for( x = 0; x < w; ++x ) {
+				color4b_t	src	= image_get_pixelb(images[r], x, y);
+				image_set_pixelb(tex, rects[r].x + x, rects[r].y + y, src);
+			}
+		}
+	}
+
+	/* release resources */
+	free(rects);
+
+	/* final result */
+	atlas	= (atlas_t*)malloc(sizeof(atlas_t));
+	if( !atlas ) {
+		free(drects);
+		free(nodes);
+		image_release(tex);
+		free(rects);
+		return boxworld_error(NOT_ENOUGH_MEMORY, "image_make_atlas: not enough memory for atlas");
+	}
+
+	atlas->baked_image	= tex;
+	atlas->coordinates	= drects;
+	atlas->image_count	= image_count;
+	return atlas;
+}
+
+void
+image_atlas_release(atlas_t* atlas) {
+	image_release(atlas->baked_image);
+	free(atlas->coordinates);
+	free(atlas);
 }

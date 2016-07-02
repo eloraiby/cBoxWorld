@@ -87,9 +87,16 @@ typedef struct {
 	void*			pixels;
 } image_t;
 
-image_t*				image_allocate(int width, int height, PIXEL_FORMAT fmt);
+image_t*				image_allocate(uint32 width, uint32 height, PIXEL_FORMAT fmt);
 void					image_release(image_t* img);
 image_t*				image_load_png(const char* path);
+
+/* TODO: these are slow to use for iteration, best case would be more granular function table */
+color4b_t				image_get_pixelb(const image_t* img, uint32 x, uint32 y);
+color4_t				image_get_pixelf(const image_t* img, uint32 x, uint32 y);
+
+void					image_set_pixelb(image_t* img, uint32 x, uint32 y, color4b_t rgba);
+void					image_set_pixelf(image_t* img, uint32 x, uint32 y, color4_t rgba);
 
 typedef struct {
 	image_t*		baked_image;
@@ -97,7 +104,7 @@ typedef struct {
 	rect_t*			coordinates;
 } atlas_t;
 
-atlas_t*				image_atlas_make(uint32 image_count, image_t** images);
+atlas_t*				image_atlas_make(uint32 image_count, const image_t * const *images);
 void					image_atlas_release(atlas_t* atlas);
 
 /*
