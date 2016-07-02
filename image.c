@@ -219,7 +219,7 @@ image_to_rect(uint32 id, const image_t* img) {
 }
 
 static uint32
-find_best_size(uint32 img_count, const image_t* const* imgs) {
+find_best_size(uint32 img_count, const image_t** imgs) {
 	static uint32	texture_size[] = { 128,	256, 512, 1024, 2048 };
 	bool			success	= true;
 	uint32			size	= 0;
@@ -272,7 +272,7 @@ image_get_pixelb(const image_t* img, uint32 x, uint32 y) {
 	switch(img->format) {
 	case PF_A8:
 		offset	= img->width * y + x;
-		return color4b(0, 0, 0, pixels[offset]);
+		return color4b(0xFF, 0xFF, 0xFF, pixels[offset]);
 	case PF_R8G8B8:
 		offset	= (img->width * y + x) * 3;
 		return color4b(pixels[offset + 0], pixels[offset + 1], pixels[offset + 2], 0xFF);
@@ -292,7 +292,7 @@ image_get_pixelf(const image_t* img, uint32 x, uint32 y) {
 	case PF_A8:
 		offset	= img->width * y + x;
 		a		= pixels[offset];
-		return color4(0, 0, 0, a / 255.0f);
+		return color4(1.0f, 1.0f, 1.0f, a / 255.0f);
 	case PF_R8G8B8:
 		offset	= (img->width * y + x) * 3;
 		r		= pixels[offset + 0];
@@ -361,7 +361,7 @@ image_set_pixelf(image_t* img, uint32 x, uint32 y, color4_t rgbaf) {
 }
 
 atlas_t*
-image_atlas_make(uint32 image_count, const image_t* const* images) {
+image_atlas_make(uint32 image_count, const image_t** images) {
 	stbrp_rect*	rects	= NULL;
 	stbrp_node*	nodes	= NULL;
 	stbrp_context	ctx;

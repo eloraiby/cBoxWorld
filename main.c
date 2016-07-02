@@ -93,7 +93,7 @@ main(void) {
 
 	fnt	= font_bake("DroidSans.ttf", 16, true, true, true, 128 - 32, chars);
 
-	ctx	= renderer_create_context(fnt->texture);
+	ctx	= renderer_create_context(fnt->atlas->baked_image);
 
 	while (!glfwWindowShouldClose(window)) {
 		int width, height;
@@ -105,7 +105,7 @@ main(void) {
 		renderer_begin(ctx, width, height);
 		renderer_quad(ctx,
 					  vec2(0.0f, 0.0f), vec2(0.0f, 0.0f),
-					  vec2(fnt->texture->width, fnt->texture->height), vec2(1.0f, 1.0f),
+					  vec2(fnt->atlas->baked_image->width, fnt->atlas->baked_image->height), vec2(1.0f, 1.0f),
 					  color4(1.0f, 1.0f, 1.0f, 1.0f));
 
 

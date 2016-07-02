@@ -104,7 +104,7 @@ typedef struct {
 	rect_t*			coordinates;
 } atlas_t;
 
-atlas_t*				image_atlas_make(uint32 image_count, const image_t * const *images);
+atlas_t*				image_atlas_make(uint32 image_count, const image_t **images);
 void					image_atlas_release(atlas_t* atlas);
 
 /*
@@ -169,7 +169,7 @@ typedef struct {
 	uint32			size;
 	uint32			char_count;
 	char_info_t*	chars;	/* chars are sorted by code point */
-	image_t*		texture;
+	atlas_t*		atlas;
 } font_t;
 
 font_t*					font_bake(const char* filename, uint32 size, bool use_hint, bool force_autohinter, bool anti_alias, uint32 cp_count, uint32* cps);
