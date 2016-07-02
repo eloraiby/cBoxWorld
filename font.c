@@ -49,12 +49,16 @@ typedef struct {
 } font_result_t;
 
 static uint32
-unpack_bits(uint8 byte, uint32 max_w, pix_stream_t* dest) {
-	uint32	w	= 0;
+unpack_bits(uint8 byte, int max_w, pix_stream_t* dest) {
+	int	w	= 0;
 	int		i;
 	for( i = 7; i >= 0 && w < max_w; i--, w++ ) {
-		if( byte & 0x80 ) { pix_stream_push(dest, 0xFF); }
-		else { pix_stream_push(dest, 0x00); }
+		if( byte & 0x80 ) {
+			pix_stream_push(dest, 0xFF);
+		} else {
+			pix_stream_push(dest, 0x00);
+		}
+		byte <<= 1;
 	}
 	return w;
 }
@@ -143,17 +147,17 @@ font_result_bake(FT_Library lib, const char* path, uint32 size, bool use_hint, b
 		max_char_size.x	= MAX(max_char_size.x, box.xMax - box.xMin);
 		max_char_size.y	= MAX(max_char_size.y, box.yMax - box.yMin);
 
-		if( !anti_alias ) {
+		if( slot->bitmap.pixel_mode == FT_PIXEL_MODE_MONO ) {
 			uint32	y;
 			for( y = 0; y < slot->bitmap.rows; ++y ) {
 				uint32	x;
-				uint32	w	= slot->bitmap.width;
+				int	w	= (int)slot->bitmap.width;
 				for( x = 0; x < (uint32)slot->bitmap.pitch; ++x ) {
 					unpack_bits(slot->bitmap.buffer[x + y * (uint32)slot->bitmap.pitch], w, &pixmap);
 					w	-= 8;
 				}
 			}
-		} else {
+		} else if( slot->bitmap.pixel_mode == FT_PIXEL_MODE_GRAY ) {
 			uint32	y;
 			for( y = 0; y < slot->bitmap.rows; ++y ) {
 				uint32	x;
@@ -161,6 +165,9 @@ font_result_bake(FT_Library lib, const char* path, uint32 size, bool use_hint, b
 					pix_stream_push(&pixmap, slot->bitmap.buffer[x + y * (uint32)slot->bitmap.pitch]);
 				}
 			}
+		} else {
+			fprintf(stderr, "font_result_bake: unhandled pixel mode!!!\n");
+			exit(1);
 		}
 
 		FT_Done_Glyph(glyph);
@@ -313,8 +320,8 @@ font_bake(const char* filename,
 	nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * best_size * 2);
 	memset(nodes, 0, sizeof(stbrp_node) * best_size * 2);
 
-	stbrp_init_target(&ctx, best_size, best_size, nodes, best_size * 2);
-	stbrp_pack_rects(&ctx, rects, ires->char_count);
+	stbrp_init_target(&ctx, (int)best_size, (int)best_size, nodes, (int)best_size * 2);
+	stbrp_pack_rects(&ctx, rects, (int)ires->char_count);
 
 	free(nodes);
 
@@ -331,7 +338,8 @@ font_bake(const char* filename,
 			uint32	x;
 			for( x = 0; x < w; ++x, ++o ) {
 				uint32	offset	= rects[r].x + x + (tex->height - 1 - y - rects[r].y) * tex->width;
-				((uint8*)tex->pixels)[offset * 4 + 3] = pix_stream_get(&(ires->pixmap), o);
+				uint8	v	= pix_stream_get(&(ires->pixmap), o);
+				((uint8*)tex->pixels)[offset * 4 + 3] = v;
 				((uint8*)tex->pixels)[offset * 4 + 2] = 0xFF;
 				((uint8*)tex->pixels)[offset * 4 + 1] = 0xFF;
 				((uint8*)tex->pixels)[offset * 4 + 0] = 0xFF;
@@ -376,7 +384,7 @@ font_bake(const char* filename,
 		result->chars[c].start		= vec2(ires->chars[c].box_min.x,
 										   ires->chars[c].box_min.y);
 		result->chars[c].code_point	= cps[c];
-		result->chars[c].tcoords	= rect(rects[c].x, rects[c].y, rects[c].w - 1, rects[c].h - 1);
+		result->chars[c].tcoords	= rect(rects[c].x, rects[c].y, rects[c].w, rects[c].h);
 	}
 
 	/* sort by code point by increasing order */

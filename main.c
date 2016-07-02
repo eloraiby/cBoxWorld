@@ -91,7 +91,7 @@ main(void) {
 		chars[i - 32]	= i;
 	}
 
-	fnt	= font_bake("DroidSans.ttf", 24, true, true, true, 128 - 32, chars);
+	fnt	= font_bake("DroidSans.ttf", 16, true, true, true, 128 - 32, chars);
 
 	ctx	= renderer_create_context(fnt->texture);
 
