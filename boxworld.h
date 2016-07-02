@@ -91,6 +91,15 @@ image_t*				image_allocate(int width, int height, PIXEL_FORMAT fmt);
 void					image_release(image_t* img);
 image_t*				image_load_png(const char* path);
 
+typedef struct {
+	image_t*		baked_image;
+	uint32			image_count;
+	rect_t*			coordinates;
+} atlas_t;
+
+atlas_t*				image_atlas_make(uint32 image_count, image_t** images);
+void					image_atlas_release(atlas_t* atlas);
+
 /*
  * render.c
  */

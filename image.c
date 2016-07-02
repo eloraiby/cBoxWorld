@@ -18,6 +18,7 @@
 */
 #include "boxworld.h"
 #include <png.h>
+#include "stb/stb_rect_pack.h"
 
 image_t*
 image_allocate(int width, int height, PIXEL_FORMAT fmt) {
@@ -203,4 +204,63 @@ image_load_png(const char* path) {
 	fclose(fp);
 
 	return tex;
+}
+
+static stbrp_rect
+image_to_rect(uint32 id, const image_t* img) {
+	stbrp_rect	rect;
+	rect.w	= (uint16) (img->width  + 1);
+	rect.h	= (uint16) (img->height + 1);
+	rect.id	= (uint16)id;
+	rect.was_packed	= 0;
+	rect.x	= 0;
+	rect.y	= 0;
+	return rect;
+}
+
+static uint32
+find_best_size(uint32 img_count, const image_t* const* imgs) {
+	static uint32	texture_size[] = { 128,	256, 512, 1024, 2048 };
+	bool			success	= true;
+	uint32			size	= 0;
+	uint32			r;
+	uint32			s;
+
+	stbrp_rect*		rects	= (stbrp_rect*)malloc(sizeof(stbrp_rect) * img_count);
+	for( r = 0; r < img_count; ++r ) {
+		rects[r]	= image_to_rect(r, imgs[r]);
+	}
+
+	for( s = 0; s < sizeof(texture_size) / sizeof(uint32); ++s ) {
+		stbrp_context	ctx;
+		uint32			r;
+		uint32			width	= texture_size[s];
+		stbrp_node*		nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * width * 2);
+		memset(nodes, 0, sizeof(stbrp_node) * width * 2);
+
+		stbrp_init_target(&ctx, width, width, nodes, width * 2);
+		stbrp_pack_rects(&ctx, rects, img_count);
+
+		free(nodes);
+
+		/* check if all rectangles were packed */
+		success	= true;
+		for( r = 0; r < img_count; ++r ) {
+			if( !rects[r].was_packed ) {
+				success	= false;
+				size	= 0;
+				break;
+			}
+		}
+
+		if( success ) {
+			size	= width;
+			break;
+		}
+	}
+
+	free(rects);
+
+	if( !success ) return 0;
+	else return size;
 }

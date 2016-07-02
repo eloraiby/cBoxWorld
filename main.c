@@ -109,13 +109,8 @@ main(void) {
 					  color4(1.0f, 1.0f, 1.0f, 1.0f));
 
 
-		uint32	cps[256] = {0};
-		for(c = 0; c < 94; ++c) {
-			cps[c]	= c;
-		}
-
-		const char* str = "Hello World! This is a test";
-		font_render_utf8(ctx, fnt, vec2(0.0f, 384.0f), strlen(str), str, color4(1.0f, 1.0f, 1.0f, 1.0f));
+		const uint8* str = (const uint8*)"Hello World!\nThis is a test";
+		font_render_utf8(ctx, fnt, vec2(0.0f, 384.0f), (uint32)strlen((const char*)str), str, color4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		renderer_end(ctx);
 

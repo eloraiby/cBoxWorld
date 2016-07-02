@@ -467,8 +467,13 @@ vec2_t
 font_render_string(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str_len, const uint32* cps, color4_t col) {
 	vec2_t	ret	= pos;
 	uint32	c;
-	for( c = 0; c < str_len; ++c )
+	for( c = 0; c < str_len; ++c ) {
+		if( (uint32)'\n' == cps[c] ) {
+			ret.x	= pos.x;
+			ret.y	= pos.y - fnt->size;
+		}
 		ret	= font_render_char(ctx, fnt, ret, cps[c], col);
+	}
 	return ret;
 }
 
@@ -480,6 +485,10 @@ font_render_utf8(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str_l
 	uint32	cp	= 0;
 	for( c = 0; c < str_len; ++c ) {
 		if( UTF8_ACCEPT == utf8_decode(&state, &cp, cps[c]) ) {
+			if( (uint32)'\n' == cps[c] ) {
+				ret.x	= pos.x;
+				ret.y	= pos.y - fnt->size;
+			}
 			ret	= font_render_char(ctx, fnt, ret, cp, col);
 		}
 	}
