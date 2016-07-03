@@ -6,6 +6,12 @@ set(CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
 )
 
+find_package(GLFW3)
+find_package(PNG)
+find_package(Freetype)
+
+cmake_minimum_required(VERSION 2.8)
+
 if (CMAKE_VERSION VERSION_LESS "3.1")
     if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
       set (CMAKE_C_FLAGS "--std=c99 ${CMAKE_C_FLAGS}")
@@ -14,11 +20,6 @@ else ()
     set (CMAKE_C_STANDARD 99)
 endif ()
 
-find_package(GLFW3)
-find_package(PNG)
-find_package(Freetype)
-
-cmake_minimum_required(VERSION 2.8)
 set(SRC_FILES
         stb/stb_rect_pack.c
         utf8.c

@@ -141,21 +141,17 @@ font_result_bake(FT_Library lib, const char* path, uint32 size, bool use_hint, b
 		max_char_size.y	= MAX(max_char_size.y, box.yMax - box.yMin);
 
 		if( slot->bitmap.pixel_mode == FT_PIXEL_MODE_MONO ) {
-			uint32	y;
 			uint32	offset	= 0;
-			for( y = 0; y < slot->bitmap.rows; ++y ) {
-				uint32	x;
+			for( uint32 y = 0; y < slot->bitmap.rows; ++y ) {
 				int	w	= (int)slot->bitmap.width;
-				for( x = 0; x < (uint32)slot->bitmap.pitch; ++x ) {
+				for( uint32 x = 0; x < (uint32)slot->bitmap.pitch; ++x ) {
 					unpack_bits(slot->bitmap.buffer[x + y * (uint32)slot->bitmap.pitch], w, &offset, cis[c].img);
 					w	-= 8;
 				}
 			}
 		} else if( slot->bitmap.pixel_mode == FT_PIXEL_MODE_GRAY ) {
-			uint32	y;
-			for( y = 0; y < slot->bitmap.rows; ++y ) {
-				uint32	x;
-				for( x = 0; x < (uint32)slot->bitmap.width; ++x ) {
+			for( uint32 y = 0; y < slot->bitmap.rows; ++y ) {
+				for( uint32 x = 0; x < (uint32)slot->bitmap.width; ++x ) {
 					((uint8*)cis[c].img->pixels)[x + y * width]	= slot->bitmap.buffer[x + y * (uint32)slot->bitmap.pitch];
 				}
 			}
@@ -182,9 +178,7 @@ font_result_bake(FT_Library lib, const char* path, uint32 size, bool use_hint, b
 
 static void
 font_result_release(font_result_t* res) {
-	uint32	c;
-
-	for( c = 0; c < res->char_count; ++c ) {
+	for( uint32 c = 0; c < res->char_count; ++c ) {
 		image_release(res->chars[c].img);
 	}
 
@@ -216,8 +210,6 @@ font_bake(const char* filename,
 	FT_Error		fterror;
 	FT_Library		ftlib;
 
-	uint32			c;
-
 	fterror	= FT_Init_FreeType(&ftlib);
 	if( fterror ) {
 		return (font_t*)boxworld_error(LOAD_FAILED, "font_bake: unable to load freetype library, bailing...");
@@ -233,7 +225,7 @@ font_bake(const char* filename,
 	assert( imgs != NULL );
 	memset(imgs, 0, sizeof(image_t*) * cp_count);
 
-	for( c = 0; c < cp_count; ++c ) {
+	for( uint32 c = 0; c < cp_count; ++c ) {
 		imgs[c]	= ires->chars[c].img;
 	}
 
@@ -253,7 +245,7 @@ font_bake(const char* filename,
 	assert( result->chars );
 
 	/* set the char info */
-	for( c = 0; c < ires->char_count; ++c ) {
+	for( uint32 c = 0; c < ires->char_count; ++c ) {
 		result->chars[c].advance	= ires->chars[c].advance;
 		result->chars[c].start		= vec2(ires->chars[c].box_min.x,
 										   ires->chars[c].box_min.y);
@@ -334,7 +326,7 @@ font_render_char(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 cp, c
 		float	h	= fnt->chars[cp_index].tcoords.height;
 
 		renderer_quad(ctx,
-					  vec2_add(start, vec2(0, h)), vec2(tsx, tsy),
+					  vec2_add(start, vec2(0, -h)), vec2(tsx, tsy),
 					  vec2_add(start, vec2(w, 0)), vec2(tex, tey),
 					  col);
 
@@ -347,11 +339,11 @@ font_render_char(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 cp, c
 vec2_t
 font_render_string(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str_len, const uint32* cps, color4_t col) {
 	vec2_t	ret	= pos;
-	uint32	c;
-	for( c = 0; c < str_len; ++c ) {
+
+	for( uint32 c = 0; c < str_len; ++c ) {
 		if( (uint32)'\n' == cps[c] ) {
 			ret.x	= pos.x;
-			ret.y	= pos.y - fnt->size;
+			ret.y	= pos.y + fnt->size;
 		}
 		ret	= font_render_char(ctx, fnt, ret, cps[c], col);
 	}
@@ -361,14 +353,14 @@ font_render_string(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str
 vec2_t
 font_render_utf8(gfx_context_t* ctx, const font_t* fnt, vec2_t pos, uint32 str_len, const uint8* cps, color4_t col) {
 	vec2_t	ret	= pos;
-	uint32	c;
 	uint32	state	= 0;
 	uint32	cp	= 0;
-	for( c = 0; c < str_len; ++c ) {
+
+	for( uint32 c = 0; c < str_len; ++c ) {
 		if( UTF8_ACCEPT == utf8_decode(&state, &cp, cps[c]) ) {
 			if( (uint32)'\n' == cps[c] ) {
 				ret.x	= pos.x;
-				ret.y	= pos.y - fnt->size;
+				ret.y	= pos.y + fnt->size;
 			}
 			ret	= font_render_char(ctx, fnt, ret, cp, col);
 		}

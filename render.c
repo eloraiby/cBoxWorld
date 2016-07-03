@@ -59,7 +59,8 @@ renderer_create_context(const image_t* tex) {
 			"{\n"
 			"    vertexColor = VertexColor;\n"
 			"    texCoord = VertexTexCoord;\n"
-			"    gl_Position = vec4(VertexPosition * 2.0 / Viewport - 1.0, 0.0, 1.0);\n"
+			"    highp vec2 pos = vec2(VertexPosition.x, Viewport.y - VertexPosition.y) * 2.0 / Viewport - 1.0;\n"
+			"    gl_Position = vec4(pos, 0.0, 1.0);\n"
 			"}\n";
 	GLuint vso = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vso, 1, (const char **)  &vs, NULL);

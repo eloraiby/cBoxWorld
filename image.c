@@ -30,24 +30,18 @@ image_allocate(uint32 width, uint32 height, PIXEL_FORMAT fmt) {
 	case PF_R8G8B8	: ps = 3; break;
 	case PF_R8G8B8A8: ps = 4; break;
 	default:
-		return boxworld_error(UNSUPPORTED, "image_allocate: unsupported input format");
+		fprintf(stderr, "ERROR: image_allocate: unsupported input format 0x%X\n", fmt);
+		return NULL;
 	}
 
 	ret	= (image_t*)malloc(sizeof(image_t));
-	if( NULL == ret ) {
-		free(ret);
-		return boxworld_error(NOT_ENOUGH_MEMORY, "image_allocate: not enough memory");
-	}
+	assert( NULL != ret );
 
 	ret->width	= width;
 	ret->height	= height;
 	ret->format	= fmt;
 	ret->pixels	= malloc(width * height * ps);
-
-	if( NULL == ret->pixels ) {
-		free(ret);
-		return boxworld_error(NOT_ENOUGH_MEMORY, "image_allocate: not enough memory");
-	}
+	assert( NULL != ret->pixels );
 
 	memset(ret->pixels, 0, width * height * ps);
 	return ret;
@@ -79,7 +73,8 @@ image_load_png(const char* path) {
 	uint32			r;	/* row */
 
 	if( (fp = fopen(path, "rb")) == NULL ) {
-		return (image_t*)boxworld_error(FILE_NOT_FOUND, "load_png: file not found");
+		fprintf(stderr, "ERROR: load_png: %s not found\n", path);
+		return NULL;
 	}
 
 	/* Create and initialize the png_struct
@@ -96,7 +91,8 @@ image_load_png(const char* path) {
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if( png_ptr == NULL ) {
 		fclose(fp);
-		return (image_t*)boxworld_error(INVALID_FORMAT, "load_png: invalid PNG format");
+
+		fprintf(stderr, "ERROR: load_png: %s: invalid PNG format\n", path);
 	}
 
 	/* Allocate/initialize the memory
@@ -105,7 +101,9 @@ image_load_png(const char* path) {
 	if (info_ptr == NULL) {
 		fclose(fp);
 		png_destroy_read_struct(&png_ptr, NULL, NULL);
-		return (image_t*)boxworld_error(NOT_ENOUGH_MEMORY, "load_png: not enough memory or format supported");
+
+		fprintf(stderr, "ERROR: load_png: %s: not enough memory or format not supported\n", path);
+		return NULL;
 	}
 
 	/* Set error handling if you are
@@ -124,8 +122,10 @@ image_load_png(const char* path) {
 		fclose(fp);
 		/* If we get here, we had a
 			* problem reading the file */
-		return (image_t*)boxworld_error(INVALID_FORMAT, "load_png: inconsistant file");
+		fprintf(stderr, "ERROR: load_png: inconsistant file %s\n", path);
+		return NULL;
 	}
+
 	/* Set up the output control if
 	* you are using standard C streams */
 	png_init_io(png_ptr, fp);
@@ -194,7 +194,7 @@ image_load_png(const char* path) {
 		// note that png is ordered top to
 		// bottom, but OpenGL expect it bottom to top
 		// so the order or swapped
-		memcpy(&(buff[width_size * (height - 1 - r)]), row_pointers[r], width_size);
+		memcpy(&(buff[width_size * r]), row_pointers[r], width_size);
 	}
 
 	/* Clean up after the read,
@@ -376,34 +376,25 @@ image_atlas_make(uint32 image_count, const image_t** images) {
 
 	/* create the texture and fill in the pixels */
 	tex	= image_allocate(best_size, best_size, PF_R8G8B8A8);
-	if( !tex ) {
-		return NULL;
-	}
+	assert( NULL != tex );
 
 	/* image to rect */
 	rects	= (stbrp_rect*)malloc(sizeof(stbrp_rect) * image_count);
+	assert( NULL != rects );
+
 	for( r = 0; r < image_count; ++r ) {
 		rects[r]	= image_to_rect(r, images[r]);
 	}
 
 	/* nodes */
 	nodes	= (stbrp_node*)malloc(sizeof(stbrp_node) * best_size * 2);
-	if( !nodes ) {
-		image_release(tex);
-		free(rects);
-		return boxworld_error(NOT_ENOUGH_MEMORY, "image_make_atlas: not enough memory for nodes");
-	}
+	assert( NULL != nodes );
 
 	memset(nodes, 0, sizeof(stbrp_node) * best_size * 2);
 
 	/* desitnation rectangles */
 	drects	= (rect_t*)malloc(sizeof(rect_t) * image_count);
-	if( !drects ) {
-		free(nodes);
-		image_release(tex);
-		free(rects);
-		return boxworld_error(NOT_ENOUGH_MEMORY, "image_make_atlas: not enough memory for drects");
-	}
+	assert( NULL != drects );
 
 	memset(drects, 0, sizeof(rect_t) * image_count);
 
@@ -440,13 +431,7 @@ image_atlas_make(uint32 image_count, const image_t** images) {
 
 	/* final result */
 	atlas	= (atlas_t*)malloc(sizeof(atlas_t));
-	if( !atlas ) {
-		free(drects);
-		free(nodes);
-		image_release(tex);
-		free(rects);
-		return boxworld_error(NOT_ENOUGH_MEMORY, "image_make_atlas: not enough memory for atlas");
-	}
+	assert( NULL != atlas );
 
 	atlas->baked_image	= tex;
 	atlas->coordinates	= drects;
